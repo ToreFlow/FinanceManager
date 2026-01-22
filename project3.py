@@ -24,7 +24,7 @@ def add():
         if not cat_input:
             print("Категория обязательна для расхода"); return
         category = cat_input
-        expense_categories.add(category)  # Авто-добавление новой категории расхода
+        expense_categories.add(category) 
 
     date_str = input("Дата (ГГГГ-ММ-ДД, Enter=сегодня): ").strip()
     date = datetime.date.today() if not date_str else datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -57,7 +57,7 @@ def view():
     for r in records:
         if start and r["date"] < start: continue
         if end and r["date"] > end: continue
-        if cat and r["category"] != cat: continue  # Теперь фильтр работает и для доходов!
+        if cat and r["category"] != cat: continue
         filtered.append(r)
 
     if not filtered:
