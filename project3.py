@@ -1,22 +1,38 @@
 import datetime
 
 records = []
-categories = {"Еда", "Транспорт", "Развлечения"}
+expense_categories = {"Еда", "Транспорт", "Развлечения"}
 
 def add():
     try:
-        a = float(input("Сумма: "))
-        if a <= 0: return
+        amount = float(input("Сумма: "))
+        if amount <= 0:
+            print("Сумма > 0"); return
     except:
         print("Неверная сумма"); return
-    t = "Доход" if input("Доход(d)/Расход(e): ").lower() == 'd' else "Расход"
-    c = input(f"Категория ({', '.join(sorted(categories))}): ").strip()
-    if not c: return
-    categories.add(c)
-    d = input("Дата (ГГГГ-ММ-ДД, Enter=сегодня): ").strip()
-    date = datetime.date.today() if not d else datetime.datetime.strptime(d, "%Y-%m-%d").date()
+
+    is_income = input("Доход(d)/Расход(e): ").lower() == 'd'
+    record_type = "Доход" if is_income else "Расход"
+
+    category = None
+    if not is_income:
+        cat_input = input(f"Категория ({', '.join(sorted(expense_categories))}): ").strip()
+        if not cat_input:
+            print("Категория обязательна для расхода"); return
+        category = cat_input
+        expense_categories.add(category)
+
+    date_str = input("Дата (ГГГГ-ММ-ДД, Enter=сегодня): ").strip()
+    date = datetime.date.today() if not date_str else datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
     desc = input("Описание: ").strip()
-    records.append({"amount": a, "type": t, "category": c, "date": date, "desc": desc})
+
+    records.append({
+        "amount": amount,
+        "type": record_type,
+        "category": category,
+        "date": date,
+        "desc": desc
+    })
     print("Добавлено")
 
 def balance():
@@ -25,36 +41,44 @@ def balance():
     print(f"\nБаланс: {inc - exp:.2f} | Доходы: {inc:.2f}, Расходы: {exp:.2f}")
 
 def view():
-    if not records: print("\nНет записей"); return
+    if not records:
+        print("\nНет записей"); return
     s = input("Начало (ГГГГ-ММ-ДД): ").strip()
     e = input("Конец (ГГГГ-ММ-ДД): ").strip()
-    cat = input("Категория: ").strip()
+    cat = input("Категория (только для расходов): ").strip()
     start = datetime.datetime.strptime(s, "%Y-%m-%d").date() if s else None
     end = datetime.datetime.strptime(e, "%Y-%m-%d").date() if e else None
-    f = [r for r in records if
-         (not start or r["date"] >= start) and
-         (not end or r["date"] <= end) and
-         (not cat or r["category"] == cat)]
-    if not f: print("Нет совпадений"); return
-    for i, r in enumerate(f, 1):
-        print(f"{i}. [{r['date']}] {r['type']} | {r['category']} | {r['amount']:.2f}" + (f" — {r['desc']}" if r['desc'] else ""))
+
+    filtered = []
+    for r in records:
+        if start and r["date"] < start: continue
+        if end and r["date"] > end: continue
+        if cat and (r["type"] != "Расход" or r["category"] != cat): continue
+        filtered.append(r)
+
+    if not filtered:
+        print("Нет совпадений"); return
+    for i, r in enumerate(filtered, 1):
+        cat_display = f" | {r['category']}" if r["category"] else ""
+        print(f"{i}. [{r['date']}] {r['type']}{cat_display} | {r['amount']:.2f}" + (f" — {r['desc']}" if r['desc'] else ""))
 
 def analyze():
     exp_by_cat = {}
-    total_exp = 0
+    total_exp = 0.0
     for r in records:
         if r["type"] == "Расход":
             cat = r["category"]
             exp_by_cat[cat] = exp_by_cat.get(cat, 0) + r["amount"]
             total_exp += r["amount"]
-    if not exp_by_cat: print("\nНет расходов"); return
-    print("\n--- Анализ ---")
+    if not exp_by_cat:
+        print("\nНет расходов"); return
+    print("\n--- Анализ расходов ---")
     for cat, amt in sorted(exp_by_cat.items(), key=lambda x: x[1], reverse=True):
         print(f"  {cat}: {amt:.2f} ({amt/total_exp*100:.1f}%)")
     top = max(exp_by_cat, key=exp_by_cat.get)
     inc = sum(r["amount"] for r in records if r["type"] == "Доход")
-    print(f"\nТоп: {top}")
-    print(f"Соотношение: {total_exp/inc:.2f}" if inc else "Доходы = 0")
+    print(f"\nТоп-категория: {top}")
+    print(f"Соотношение расходов к доходам: {total_exp/inc:.2f}" if inc else "Доходы = 0")
 
 def main():
     while True:
